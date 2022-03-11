@@ -121,15 +121,17 @@ export class ExploreChartHeader extends React.PureComponent {
 
   async fetchChartDashboardData() {
     const { dashboardId, slice } = this.props;
-    const response = await SupersetClient.get({
+    await SupersetClient.get({
       endpoint: `/api/v1/chart/${slice.slice_id}`,
-    });
-    const chart = response.json.result;
-    const dashboards = chart.dashboards || [];
-    const dashboard =
-      dashboardId &&
-      dashboards.length &&
-      dashboards.find(d => d.id === dashboardId);
+    })
+      .then(res => {
+        const response = res?.json?.result;
+        if (response && response.dashboards && response.dashboards.length) {
+          const { dashboards } = response;
+          const dashboard =
+            dashboardId &&
+            dashboards.length &&
+            dashboards.find(d => d.id === dashboardId);
 
           if (dashboard && dashboard.json_metadata) {
             // setting the chart to use the dashboard custom label colors if any
