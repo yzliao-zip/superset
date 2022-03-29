@@ -44,7 +44,7 @@ class DatasetSchemaFilter(BaseFilter):
 
 class SLDatasetRestApi(BaseSupersetModelRestApi):
     datamodel = SQLAInterface(Dataset)
-    # todo(hugh): this should be a DatasetFilter instead of Datsource (security)
+    # todo(hugh): this should be a DatasetFilter instead of Datsource
     #  base_filters = [["id", DatasourceFilter, lambda: []]]
 
     resource_name = "datasets"

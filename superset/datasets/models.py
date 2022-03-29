@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import sqlalchemy as sa
 from flask_appbuilder import Model
-from sqlalchemy.orm import column_property, relationship
+from sqlalchemy.orm import backref, column_property, relationship
 
 from superset.columns.models import Column
 from superset.extensions import db
@@ -80,6 +80,17 @@ class Dataset(Model, AuditMixinNullable, ExtraJSONMixin, ImportExportMixin):
     # n:n relationship
     tables: List[Table] = relationship("Table", secondary=table_association_table)
 
+    # default database
+    default_schema = sa.Column(sa.Text)
+    database_id = sa.Column(sa.Integer, sa.ForeignKey("dbs.id"), nullable=False)
+    default_database: Database = relationship(
+        "Database",
+        # TODO (betodealmeida): rename the backref to ``tables`` once we get rid of the
+        # old models.
+        backref=backref("new_tables", cascade="all, delete-orphan"),
+        foreign_keys=[database_id],
+    )
+
     # The relationship between datasets and columns is 1:n, but we use a many-to-many
     # association to differentiate between the relationship between tables and columns.
     columns: List[Column] = relationship(
@@ -116,10 +127,6 @@ class Dataset(Model, AuditMixinNullable, ExtraJSONMixin, ImportExportMixin):
         return "virtual" if self.is_physical else "physical"
 
     @property
-    def schema(self) -> Optional[str]:
-        return "public"
-
-    @property
     def sql(self) -> Optional[str]:
         return self.expression
 
@@ -153,18 +160,3 @@ class Dataset(Model, AuditMixinNullable, ExtraJSONMixin, ImportExportMixin):
             )
             return database.data
         return None
-
-    @property
-    def schema(self) -> Optional[str]:
-        if self.tables:
-            database = (
-                db.session.query(Database)
-                .filter(Database.id == self.tables[0].database_id)
-                .one()
-            )
-            return database.schema
-        return "default"
-
-    @property
-    def owners(self) -> Optional[List[int]]:
-        return []
